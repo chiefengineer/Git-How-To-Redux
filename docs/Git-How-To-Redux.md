@@ -1,5 +1,7 @@
 Review of markdown, pick cheat sheet
 branching revisited
+.gitignore files: https://github.com/github/gitignore
+  glob patterns: https://en.wikipedia.org/wiki/Glob_%28programming%29
 remote repositories
 diff between pull and fetch
 
