@@ -154,7 +154,90 @@ The keys to a "proper" work flow are these:
   because "management doesn't like it" _is not acceptable and all such changes_  
   _must be rejected!_  
 
+### Stashing your work  
+
+The scenario: You are plugging along on your feature branch when the boss comes  
+by and says "you gotta stop what you're doing and fix this, right now!". You  
+don't want to commit your half-finished work, but you don't want to lost it  
+either by checking out a branch and paving over your current work. So...what to  
+do? Stash your work on a stack, switch branches, do the boss' fix and then go  
+back to what you were doing before. How? Stash your work on a "stack" of  
+stashes that can be recalled later.  
+Think of a stash as that post-it note you stick on your monitor to remind you  
+of something that needs doing but isn't worth a formal entry in your "TO-DO"  
+list. How to do it? Like this:  
+
+`git stash`
+
+That's it. Now, you can switch branches, do your thing and then switch back to  
+your branch and execute a `git stash list` to see how many stashes have been  
+done (best idea is to not do more than one, but it's possible) or, if you are  
+ready to begin work again, `git stash apply`. That will pull the latest stash  
+off of the stack and apply it to the current working directory. As long as your  
+current working directory is clean (no un-staged or un-committed files), you'll  
+be good, otherwise, you'll get merge errors (remember, git makes it _very hard_
+to screw things up).  
+Since the stash mechanism is a stack, the entries are zero-based indexed,  
+meaning that the first entry is index 0, the second entry is index 1 and so  
+forth.  
+You can delete a stash by executing a `git stash drop stash@[<index>]` where
+`<index>` is the index number of the stash you wish to remove.  
+
+The `git stash` command has a couple of tricks that make it even more fun to  
+play with:
+
+`git stash --keep-index` to not stash anything that is already staged. Another  
+fun one is `git stash --include-untracked` or `git stash -u` for stashing new  
+files that aren't staged yet but are part of the work you're doing. There are  
+more options, please see the help for additional fun things you can do with  
+stash.  
+
+### Sub-modules  
+
+What's a sub-module? Easy - it's a git repository that is stored as a branch  
+within another git repository. Why would you do this? Let's say you have a  
+library of code that your main project uses _and you know you might have to__  
+__make changes to that library__, then you might want to include a reference  
+to the library's repository so your changes aren't local, but reflected  
+throughout whichever other projects use that library.  No sense in having  
+multiple variants of the same library out in the world, better to ensure that  
+changes to said library don't break anything anywhere else.  
+So, how to create a sub-module? Like this:  
+
+`git submodule add <some url to the other repository>`
+
+Now, by default, the command will do the equivalent of a `git init` in a  
+sub-directory of your current project using the same name as the repository,  
+e.g. if the repository is "AOC.Library", then the sub-module will be pulled  
+down into a directory also named "AOC.Library".  
+
+Now, let's say you are cloning a repository with sub-modules already attached.  
+You'll issue a `git clone <url>` command just as always. How do you know that  
+this repo has sub-modules? Look for a file named ".gitmodules". If the repo  
+has one, then there are sub-modules.  
+To initialize the sub-modules, you'll still need to initialize them as well.  
+To do so, execute the following:  
+c
+`git submodule init`
+
+will cause the git command to scan the .gitmodules file looking for the  
+sub-modules and initialize them as separate git repositories in the appropriate  
+directories. Once complete, issue a `git submodule update` command to fetch all  
+of the repo information for all the sub-modules down and apply it to the local  
+repositories. Or, you can cheat and issue your first `git clone` command like  
+this:
+
+`git clone --recursive <some url>`
+
+and all that work will be done for you.  
+
+There is much more to sub-modules that this simple introduction. Best to read  
+chapter 7 in the referenced book for all the scenarios.  
+
 ### Remote Repositories  
+
+Refer to page 61 of the book as well as chapter 5 for additional information  
+on remote git servers.  
 
 The single outstanding feature of a "remote" repository is that it is  
 _**exactly the same**_ as the repository found on your local machine save for  
@@ -165,13 +248,54 @@ Everything else is identical in all respects, especially the content of the
 references the remote (as long as everyone has kept up their own copy, that is).  
 
 To see what remotes are attached to your current repository (meaning that the  
-repository is aware of the remove and will communicate with it), one may  
+repository is aware of the remote and will communicate with it), one may  
 execute the following command:
 
 `git remote -v`
 
 which will display the short name of the remote e.g. "origin" and the url of  
 said remote.  
+
+Executing a `git fetch` will pull down all the branch information for the  
+specified remote and store it as a copy in your local git file system.  
+_However_, you do **not** have a read/write version of the branch to work on  
+only a _copy_ of the branch as originally placed on the remote server. To get  
+a working copy of the branch to work on yourself, you need to merge that copy  
+of the remote branch that is now on your local machine, e.g. origin/feature,  
+with your currently checked out branch.  
+It's a good idea to keep from confusing yourself, to create a local branch with  
+the same name as the remote branch to perform the merge with, e.g.  
+
+`git checkout -b feature origin/feature`
+
+will create a local branch, "feature", checkout that newly created branch and  
+then merge the content of "origin/feature" with your new "feature". This will  
+give you a starting place that is where "origin/feature" left off.  
+
+Doing this operation automatically creates what is known as a "tracking branch".  
+Tracking branches are local branches that have a direct relationship with a  
+remote branch. Also, performing a `git pull` while on one of these branches  
+will fetch all the remote references and then automatically merge the content  
+of the remote branch with the current tracking branch.  
+
+This is why `git pull` and `git push` (as written, no other arguments) "just  
+work" out of the box. What was actually created was a tracking branch against  
+"main" when you clone a repository. This is a common enough scenario that git  
+even provides a shortcut command to perform the same action:
+
+  `git checkout --track <remote server>/<remote branch>`
+
+...and, obviously, you can change the name of the local branch vs the remote  
+branch, however, the author _strongly_ discourages such activity, it just leads  
+to confusion.  
+
+To see what tracking branches you have set up, use:
+
+`git branch -vv` (no, that's not a mis-type, it's actually "-vv")  
+
+So, to summarize, if you set up a tracking branch, `git pull` and `git push`,  
+as written, no arguments, will "just work" as long as your current working  
+directory is pointing to (meaning you have checked out) a tracking branch.  
 
 To get your locally committed changes up to the selected remote server, one  
 executes the following:
@@ -183,10 +307,11 @@ is the branch to be pushed e.g. `main`.
 
 ### Difference between a `git pull` and a `git fetch`  
 
-`git fetch` pulls all of the .git directory information to your local machine.  
+`git fetch` pulls all of the .git directory information to your local machine  
+from the specified remove server.  
 This is how one maintains a current copy of the working repository. Some even  
 go so far as to create a cron job (background task) to execute a `git fetch`  
-on a regular basis just to keep their repository fresh.  
+on a regular basis just to keep their repository fresh and current.  
 
 ### Command refresher
 
